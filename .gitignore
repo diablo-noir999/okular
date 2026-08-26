@@ -13,6 +13,9 @@ CMakeLists.txt.user*
 .qtcreator
 /cmake-build*
 
+# Release artifacts
+*.tar.gz
+
 # Flatpak
 .flatpak-builder
 build-dir

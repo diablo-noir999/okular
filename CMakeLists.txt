@@ -100,7 +100,7 @@ ecm_setup_version(${PROJECT_VERSION}
                   VERSION_HEADER "${CMAKE_CURRENT_BINARY_DIR}/core/version.h"
                   PACKAGE_VERSION_FILE "${CMAKE_CURRENT_BINARY_DIR}/Okular6ConfigVersion.cmake")
 
-find_package(Qt6 ${QT_REQUIRED_VERSION} CONFIG REQUIRED COMPONENTS Core Test Widgets PrintSupport Svg Xml)
+find_package(Qt6 ${QT_REQUIRED_VERSION} CONFIG REQUIRED COMPONENTS Core Test Widgets PrintSupport Svg Xml Network)
 
 find_package(KF6 ${KF_REQUIRED_VERSION} REQUIRED COMPONENTS
     Archive
@@ -566,6 +566,12 @@ if(BUILD_DESKTOP)
     part/signaturepropertiesdialog.cpp
     part/signaturepanel.cpp
     part/signingcertificatelistmodel.cpp
+    part/aipanel/aipanelwidget.cpp
+    part/aipanel/aisettings.cpp
+    part/aipanel/aisettingsdialog.cpp
+    part/aipanel/llmclient.cpp
+    part/aipanel/opencodeclient.cpp
+    part/aipanel/searchhelper.cpp
     part/part.qrc
   )
   ki18n_wrap_ui(okularpart_SRCS part/selectcertificatedialog.ui)
@@ -583,6 +589,7 @@ generate_export_header(okularpart BASE_NAME okularpart)
 target_link_libraries(okularpart okularcore
     ${MATH_LIB}
     Qt6::Svg
+    Qt6::Network
     KF6::Archive
     KF6::Bookmarks
     KF6::I18n

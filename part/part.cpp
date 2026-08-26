@@ -50,6 +50,7 @@
 #include <QPrinter>
 #include <QScopedValueRollback>
 #include <QScrollBar>
+#include <QSplitter>
 #include <QSlider>
 #include <QSpinBox>
 #include <QStandardPaths>
@@ -126,6 +127,7 @@
 #include "signaturepanel.h"
 #include "thumbnaillist.h"
 #include "toc.h"
+#include "aipanel/aipanelwidget.h"
 
 #include <memory>
 #include <type_traits>
@@ -498,7 +500,18 @@ Part::Part(QObject *parent, const QVariantList &args)
     connect(m_document, &Document::notice, this, &Part::noticeMessage);
     connect(m_document, &Document::sourceReferenceActivated, this, &Part::slotHandleActivatedSourceReference);
     connect(m_pageView.data(), &PageView::fitWindowToPage, this, &Part::fitWindowToPage);
-    rightLayout->addWidget(m_pageView);
+    // Horizontal splitter: pageView (left) | AI panel (right)
+    m_aiPanel = new AIPanelWidget(m_document, rightContainer);
+    // The AI panel is an interactive extra that makes network requests; keep it off
+    // in embedded/widget modes that have no "Show AI Explainer" toggle.
+    m_aiPanel->setVisible(m_embedMode != Okular::ViewerWidgetMode);
+    m_aiPanel->setPanelEnabled(m_embedMode != Okular::ViewerWidgetMode);
+    auto *aiSplitter = new QSplitter(Qt::Horizontal, rightContainer);
+    aiSplitter->addWidget(m_pageView);
+    aiSplitter->addWidget(m_aiPanel);
+    aiSplitter->setStretchFactor(0, 3);
+    aiSplitter->setStretchFactor(1, 1);
+    rightLayout->addWidget(aiSplitter);
     m_layers->setPageView(m_pageView);
     m_signaturePanel->setPageView(m_pageView);
     m_findBar = new FindBar(m_document, rightContainer);
@@ -537,6 +550,8 @@ Part::Part(QObject *parent, const QVariantList &args)
     m_document->addObserver(m_pageSizeLabel);
     m_document->addObserver(m_bookmarkList);
     m_document->addObserver(m_signaturePanel);
+
+    m_document->addObserver(m_aiPanel);
 
     connect(m_document->bookmarkManager(), &BookmarkManager::saved, this, &Part::slotRebuildBookmarkMenu);
 
@@ -744,6 +759,7 @@ void Part::setupViewerActions()
 
     m_showLeftPanel = nullptr;
     m_showBottomBar = nullptr;
+    m_showAIPanel = nullptr;
     m_showSignaturePanel = nullptr;
 
     m_showProperties = ac->addAction(QStringLiteral("properties"));
@@ -877,6 +893,15 @@ void Part::setupActions()
     m_showBottomBar->setChecked(Okular::Settings::showBottomBar());
     slotShowBottomBar();
 
+    m_showAIPanel = ac->add<KToggleAction>(QStringLiteral("show_aipanel"));
+    m_showAIPanel->setText(i18n("Show &AI Explainer"));
+    m_showAIPanel->setIcon(QIcon::fromTheme(QStringLiteral("brain"), QIcon::fromTheme(QStringLiteral("help-about"))));
+    connect(m_showAIPanel, &QAction::toggled, this, &Part::slotShowAIPanel);
+    ac->setDefaultShortcut(m_showAIPanel, QKeySequence(Qt::Key_F8));
+    m_showAIPanel->setChecked(true);
+    slotShowAIPanel();
+    connect(m_aiPanel, &AIPanelWidget::closeRequested, m_showAIPanel, &QAction::trigger);
+
     m_showSignaturePanel = ac->add<QAction>(QStringLiteral("show_signatures"));
     m_showSignaturePanel->setText(i18n("Show &Signatures Panel"));
     connect(m_showSignaturePanel, &QAction::triggered, this, [this] {
@@ -971,6 +996,8 @@ Part::~Part()
 #endif // HAVE_DBUS
 
     m_document->removeObserver(this);
+    delete m_aiPanel;
+    m_aiPanel = nullptr;
 
     if (m_document->isOpened()) {
         Part::closeUrl(false);
@@ -2044,6 +2071,16 @@ void Part::slotShowBottomBar()
     Okular::Settings::self()->save();
     // show/hide bottom bar
     m_bottomBar->setVisible(showBottom);
+}
+
+void Part::slotShowAIPanel()
+{
+    if (m_aiPanel && m_showAIPanel) {
+        const bool showAI = m_showAIPanel->isChecked();
+        m_aiPanel->setVisible(showAI);
+        // Don't let a hidden panel keep making search/LLM requests in the background
+        m_aiPanel->setPanelEnabled(showAI);
+    }
 }
 
 void Part::slotFileDirty(const QString &path)

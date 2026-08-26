@@ -51,6 +51,7 @@
     <Action name="view_trim_mode"/>
     <Separator/>
     <Action name="view_toggle_forms"/>
+    <Action name="show_aipanel"/>
   </Menu>
   <Menu name="go"><text>&amp;Go</text>
     <Action name="go_previous"/>

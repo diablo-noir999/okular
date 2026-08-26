@@ -76,6 +76,7 @@ class BookmarkList;
 class DrawingToolActions;
 class Layers;
 class SignaturePanel;
+class AIPanelWidget;
 
 #if HAVE_PURPOSE
 namespace Purpose
@@ -241,6 +242,7 @@ protected Q_SLOTS:
     void slotShowEmbeddedFiles();
     void slotShowLeftPanel();
     void slotShowBottomBar();
+    void slotShowAIPanel();
     void slotShowPresentation();
     void slotHidePresentation();
 
@@ -439,6 +441,7 @@ private:
     KToggleAction *m_showMenuBarAction;
     KToggleAction *m_showLeftPanel;
     KToggleAction *m_showBottomBar;
+    KToggleAction *m_showAIPanel;
     QAction *m_showSignaturePanel;
     KToggleFullScreenAction *m_showFullScreenAction;
     QAction *m_aboutBackend;
@@ -449,6 +452,8 @@ private:
 #endif
     QAction *m_closeFindBar;
     DrawingToolActions *m_presentationDrawingActions;
+
+    AIPanelWidget *m_aiPanel = nullptr;
 
     BrowserExtension *m_bExtension;
 
